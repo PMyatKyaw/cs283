@@ -2,7 +2,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-
 #define BUFFER_SZ 50
 
 //prototypes
@@ -11,11 +10,21 @@ void print_buff(char *, int);
 int  setup_buff(char *, char *, int);
 
 //prototypes for functions to handle required functionality
-int  count_words(char *, int, int);
+int  count_words(char *, int);
 //add additional prototypes here
-int reverse_buff(char *, int);
-int write_buff(char *, int);
 
+// Reverse the buffer
+int reverse_buff(char *, int);
+// Count each word in the buffer
+int write_buff(char *, int);
+// Find a word in the buffer
+int find_str_buff (char*, int, int, char*);
+// Find and replace a word in the buffer
+int replace_buff(char*, int, int, char*, char*);
+
+void usage(char *exename){
+    printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
+}
 
 int setup_buff(char *buff, char *user_str, int len){
     int word_count = 0; // buff counter
@@ -28,68 +37,51 @@ int setup_buff(char *buff, char *user_str, int len){
             exit(-1);
         }
 
+        // If character is ' ' or '\t' or '\n'
         if (*(user_str + i) == 32 || *(user_str + i) == 9 || *(user_str + i) == 10) {
-        
             if (!addSpace) {
                 ++i;
+
             } else if (addSpace) {
-                // printf("space added\n");
                 addSpace = 0;
                 *(buff + word_count) = ' ';
-                // printf("%c\n", *(buff + word_count));
-
                 ++word_count; ++i;
             }
   
         } else {
             *(buff + word_count) = *(user_str + i);
-            // printf("%c\n", *(buff + word_count));
             addSpace = 1;
-
-            ++i; ++word_count;
+            ++word_count, ++i;
         }
     }
-    // printf("Word Count: %d\n", word_count);
 
     // Last added buffer is space
     if (*(buff + (word_count - 1)) == ' ') {
         --word_count;
     }
     int new_word_count = word_count;
-
-    // printf("Word Count: %d\n", word_count);
-
+    
+    // Add '.' until end of buffer
     while (new_word_count !=  BUFFER_SZ) {
         *(buff + new_word_count) = '.';
         ++new_word_count;
     } 
 
-    // for (size_t j = 0; j < word_count; j++) {
-    //      printf("%c", *(buff + j));
-    // }
-    // printf("\n");
-    
-      
-    //TODO: #4:  Implement the setup buff as per the directions
     return word_count; //for now just so the code compiles. 
 }
 
 void print_buff(char *buff, int len){
-    printf("Buffer:  ");
+    printf("Buffer:  [");
     for (int i=0; i<len; i++){
         putchar(*(buff+i));
     }
+    putchar(']');
     putchar('\n');
 }
 
-void usage(char *exename){
-    printf("usage: %s [-h|c|r|w|x] \"string\" [other args]\n", exename);
-
-}
-
-int count_words(char *buff, int len, int str_len){
+int count_words(char *buff, int len){
     int i = 0;
-    int counter = 0;
+    int counter = 0; // Word Counter
     while (i < len) {
         if (*(buff + i) == ' ') {++counter;}
         ++i;    
@@ -101,8 +93,8 @@ int count_words(char *buff, int len, int str_len){
 
 //ADD OTHER HELPER FUNCTIONS HERE FOR OTHER REQUIRED PROGRAM OPTIONS
 int reverse_buff(char *buff, int str_buff_len) {
-    size_t first = 0;
-    size_t last = str_buff_len - 1;
+    size_t first = 0;                   // First character in buffer
+    size_t last = str_buff_len - 1;     // Last character in buffer
     char tmp;
 
     while (first < last) {
@@ -120,13 +112,11 @@ int write_buff(char *buff, int len) {
     int nWords = 0;
 
     printf("Word Print\n----------\n");
-    // printf("Len : %d\n", len);
 
     for (int i = 0; i < len + 1; i++) {
-
         if ((*(buff + i) == ' ' || *(buff+i) == '.') && (tmpCounter != 0)) {
-            // printf("%d\n", i);
-            ++nWords; printf("%d. ", nWords);
+            ++nWords; 
+            printf("%d. ", nWords);
 
             for (int j = i - tmpCounter; j < i; j++) {
                 putchar(*(buff+j));
@@ -140,7 +130,87 @@ int write_buff(char *buff, int len) {
         }
     }
 
+    printf("\nNumber of words returned: %d\n", nWords);
     return nWords;
+}
+
+int find_str_buff (char* buff, int buff_len, int user_str_len, char* find_str) {
+    for (int i = 0; i < user_str_len; i++){
+
+        // If first character of the string is the same
+        if (*(buff + i) == *find_str) {
+            int j = 0;
+
+            // Check the remaining character to see whether they are the same
+            while (*(find_str + j) != '\0') {
+
+                // Overflow error in buffer while searching for str
+                if( i + j >= buff_len) {
+                    return 0;
+                }
+
+                if (*(buff + i + j) != *(find_str + j)) {
+                    break;
+                }
+                ++j;
+            }
+
+            if (*(find_str+j) == '\0') {
+                return i;
+            }
+        } 
+    }
+
+    return 0;
+}
+
+int replace_buff(char* buff, int buff_len, int user_str_len, char* find_str, char* replace_str) {
+
+    int findStartIndex = 0;     // The first character of the word to be replaced, if found
+    int find_len = 0;           // The to be replaced character count
+    int replace_len = 0;        // The replacing character count
+    int len_diff = 0;           // The count difference of above two
+
+    findStartIndex = find_str_buff(buff, buff_len, user_str_len, find_str);
+
+    while (*(find_str + find_len) != '\0') { ++find_len; }
+    while (*(replace_str + replace_len) != '\0') { ++replace_len; }
+    len_diff = replace_len - find_len;
+    
+    if (findStartIndex) {           // if word is found
+        if(len_diff > 0) {          // len_diff is positive meaning the replacement word is bigger
+            if (user_str_len + len_diff > buff_len) {
+                return -1;
+            }
+
+            for (int i = user_str_len - 1; i >= (findStartIndex + find_len); i--) {
+                *(buff + i+ len_diff) = *(buff + i);
+            }
+            memcpy(buff + findStartIndex, replace_str, replace_len);
+            return findStartIndex;
+
+        } else if (len_diff < 0) {  // len_diff is negative meaning the replacement word is smaller
+            memcpy(buff + findStartIndex, replace_str, replace_len);
+
+            for (int i = findStartIndex + replace_len; i < buff_len + len_diff; i++) {
+                *(buff + i) = *(buff + i - len_diff);
+            }
+
+            // Fill Up the reminding buffer at the end with '.'
+            for (int i = buff_len + len_diff; i < buff_len; i++) {
+                *(buff + i) = '.';
+            }
+            return findStartIndex;
+
+        } else {                    // len_diff is zero meaning the replacement word has same length
+                                    // with word that is to be replaced
+            memcpy(buff + findStartIndex, replace_str, replace_len);
+            return findStartIndex;
+        }
+
+    } else {                        // Word not found in buffer
+        return -1;
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -172,8 +242,9 @@ int main(int argc, char *argv[]){
     //WE NOW WILL HANDLE THE REQUIRED OPERATIONS
 
     //TODO:  #2 Document the purpose of the if statement below
-    //      This if statement checks the user input whether they include additional
-    //      string after inputting "-[]"
+    //      This if statement checks the user include additional
+    //      string after inputting "-[]". That string is necessary for
+    //      the code to do the required processing of "-[]"
     if (argc < 3){
         usage(argv[0]);
         exit(1);
@@ -181,16 +252,13 @@ int main(int argc, char *argv[]){
 
     input_string = argv[2]; //capture the user input string
 
-    //TODO:  #3 Allocate space for the buffer using malloc and
-    //          handle error if malloc fails by exiting with a 
-    //          return code of 99
-    // CODE GOES HERE FOR #3
+    // Allocate buffer
     buff = (char*) malloc(BUFFER_SZ);
     if (!buff) {
         exit(99);
     }
 
-    user_str_len = setup_buff(buff, input_string, BUFFER_SZ);     //see todos
+    user_str_len = setup_buff(buff, input_string, BUFFER_SZ);   // Process buffer to required format
     if (user_str_len < 0){
         printf("Error setting up buffer, error = %d", user_str_len);
         exit(2);
@@ -198,16 +266,13 @@ int main(int argc, char *argv[]){
 
     switch (opt){
         case 'c':
-            rc = count_words(buff, BUFFER_SZ, user_str_len);  //you need to implement
+            rc = count_words(buff, BUFFER_SZ);
             if (rc < 0){
                 printf("Error counting words, rc = %d", rc);
                 exit(2);
             }
             printf("Word Count: %d\n", rc);
             break;
-
-        //TODO:  #5 Implement the other cases for 'r' and 'w' by extending
-        //       the case statement options
 
         case 'r':
             rc = reverse_buff(buff, user_str_len);
@@ -226,7 +291,16 @@ int main(int argc, char *argv[]){
             break;
 
         case 'x':
+            if (argc < 5){
+                printf("usage: -x \"string\" \"string1\" \"string2\" \n");
+                exit(1);
+            }
 
+            rc = replace_buff(buff, BUFFER_SZ, user_str_len, argv[3], argv[4]);
+            if (rc < 0){
+                printf("Not Implemented!\n");
+                exit(2);
+            }
             break;
 
         default:
@@ -234,7 +308,6 @@ int main(int argc, char *argv[]){
             exit(1);
     }
 
-    //TODO:  #6 Dont forget to free your buffer before exiting
     print_buff(buff,BUFFER_SZ);
     free(buff);
     exit(0);
@@ -246,4 +319,12 @@ int main(int argc, char *argv[]){
 //          is a good practice, after all we know from main() that 
 //          the buff variable will have exactly 50 bytes?
 //  
-//          PLACE YOUR ANSWER HERE
+//          I think it is a good practice to pass in that preprocesser derivative because
+//          while the programmer writes a lot of code, it is difficult to keep track of all
+//          the constants if they were to blindly put different constants in a function.
+//          Putting that constant as a parameter make it more readable. 
+//          Another reason would be the programmer using the function with different sizes
+//          rather than the given preprocesser derivative. If the programmer were to straight
+//          up use the constant, that constant would be tied to the function
+//          and that is not a good programming practice. There might be cases where the
+//          programmer might want to use different values.
