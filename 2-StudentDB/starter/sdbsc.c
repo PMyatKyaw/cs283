@@ -71,6 +71,7 @@ int get_student(int fd, int id, student_t *s)
             return ERR_DB_FILE;
         }
 
+        // Data Found
         if (s->id == id) {
             return NO_ERROR;
         }
@@ -106,47 +107,37 @@ int get_student(int fd, int id, student_t *s)
  */
 int add_student(int fd, int id, char *fname, char *lname, int gpa)
 {
-    off_t offset, lseekReturn;
-    ssize_t readReturn, writeReturn;
-    int memcmpReturn;
-    student_t student = {0}, studentCmp = {0};
+    off_t offset, lseekReturn;                      // Offset, return value for lseek()
+    ssize_t readReturn, writeReturn;                // Return values for read() and write()
+    int memcmpReturn;                               // Return value for memcmp()
+    student_t student = {0}, studentCmp = {0};      // Initialize both structs with zero
 
+    // Skip 1st 64 bytes of file
     offset = STUDENT_RECORD_SIZE * id;
     lseekReturn = lseek(fd, offset, SEEK_SET);
     if (lseekReturn < 0) {
         printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
     }
-    // printf("%ld\n", lseekReturn);
 
-    // student_t student = {0};
-    // student_t studentCmp = {0};
+    // Check whether there is an existing student in memory
     readReturn = read(fd, &studentCmp, STUDENT_RECORD_SIZE);
     if (readReturn < 0) {
             printf(M_ERR_DB_READ);
             return ERR_DB_FILE;
         }
-
-    // printf("Read Return: %ld\n", readReturn);
-    // printf("ID: %d\n", studentCmp.id);
-    // printf("fname: %s\n", studentCmp.fname);
-
     memcmpReturn = memcmp(&student, &studentCmp, STUDENT_RECORD_SIZE);
     if (memcmpReturn != 0) {
         printf(M_ERR_DB_ADD_DUP, id);
         return(ERR_DB_OP);
     }
 
-
-    // Reset the pointer after reading
+    // Reset the pointer after confirming there's no previous student
     lseekReturn = lseek(fd, offset, SEEK_SET);
     if (lseekReturn < 0) {
         printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
     }
-    // printf("%ld\n", lseekReturn);
-
-
 
     // Add data to the student struct
     student.id = id;
@@ -154,12 +145,12 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
     strncpy(student.lname, lname, sizeof(student.lname));
     student.gpa = gpa;
 
+    // Write student to file
     writeReturn = write(fd, &student, STUDENT_RECORD_SIZE);
     if (writeReturn < 0) {
         printf(M_ERR_DB_WRITE);
         return ERR_DB_FILE;
     }
-    // printf("%ld\n", writeReturn);
 
     printf(M_STD_ADDED, id);
     return NO_ERROR;
@@ -189,13 +180,13 @@ int add_student(int fd, int id, char *fname, char *lname, int gpa)
  */
 int del_student(int fd, int id)
 {
-    student_t student = {0};
-    int rc;
-    off_t offset, lseekReturn;
-    ssize_t writeReturn;
+    student_t student = {0};        // Initialize student struct   
+    int rc;                         // Return Value for get_student()
+    off_t offset, lseekReturn;      // Lseek variables
+    ssize_t writeReturn;            // Return value for write()
 
+    // Check if student exists in database
     rc = get_student(fd, id, &student);
-
     if (rc == ERR_DB_FILE) {
         return ERR_DB_FILE;
     } else if (rc == SRCH_NOT_FOUND) {
@@ -206,6 +197,7 @@ int del_student(int fd, int id)
         return ERR_DB_FILE;
     }
 
+    // Get to the memory location
     offset = student.id * STUDENT_RECORD_SIZE;
     lseekReturn = lseek(fd, offset, SEEK_SET);
     if (lseekReturn < 0) {
@@ -213,6 +205,7 @@ int del_student(int fd, int id)
         return ERR_DB_FILE;
     }
 
+    // Delete student by setting zero to all values inside the struct
     writeReturn = write(fd, &EMPTY_STUDENT_RECORD, STUDENT_RECORD_SIZE);
     if (writeReturn < 0) {
         printf(M_ERR_DB_WRITE);
@@ -249,10 +242,11 @@ int del_student(int fd, int id)
  */
 int count_db_records(int fd)
 {
-    int counter;
-    ssize_t readReturn;
-    student_t student = {0}, studentCmp = {0};
+    int counter;                                    // Student Records' Counter
+    ssize_t readReturn;                             // Return value for read()
+    student_t student = {0}, studentCmp = {0};      // Initialize student structs
 
+    // Count all student records until it reachs EOF of file
     while ((readReturn = read(fd, &student, STUDENT_RECORD_SIZE)) != 0) {
         if (readReturn < 0) {
             printf(M_ERR_DB_READ);
@@ -308,12 +302,11 @@ int count_db_records(int fd)
  */
 int print_db(int fd) 
 {
-    student_t student = {0};
-    student_t studentCmp = {0};
-    ssize_t readReturn;
-    bool firstRowEncounter = false;
+    student_t student = {0}, studentCmp = {0};      // Initialize student structs
+    ssize_t readReturn;                             // Return Value for read()
+    bool firstRowEncounter = false;                 // First Record found?
 
-
+    // Print all student records until it reachs EOF of file
     while ((readReturn = read(fd, &student, STUDENT_RECORD_SIZE)) != 0) {
 
         if (readReturn < 0) {
@@ -324,6 +317,7 @@ int print_db(int fd)
         if (memcmp(&student, &studentCmp, STUDENT_RECORD_SIZE) != 0) {
             float calculatedGPA = student.gpa / 100.0;
 
+            // Print the header when first student record is found
             if (!firstRowEncounter) {
                 printf(STUDENT_PRINT_HDR_STRING, "ID", "FIRST NAME", "LAST_NAME", "GPA");
                 firstRowEncounter = true;
@@ -426,33 +420,32 @@ void print_student(student_t *s)
  */
 int compress_db(int fd)
 {
-    int com_fd;
-    student_t student = {0}, studentCmp = {0};
-    off_t lseekReturn;
-    ssize_t readReturn, writeReturn;
+    int com_fd;                                     // fd for new file
+    student_t student = {0}, studentCmp = {0};      // Initialize the structs
+    off_t lseekReturn;                              // Return value for lseek()
+    ssize_t readReturn, writeReturn;                // Return values for read() and write()
 
+    // Open new compressed file
     com_fd = open_db(TMP_DB_FILE, false); 
     if (com_fd == -1) {
         printf(M_ERR_DB_OPEN);
         return ERR_DB_FILE;
     }
 
+    // Skip 1st 64 bytes in compressed file
     lseekReturn = lseek(com_fd, STUDENT_RECORD_SIZE, SEEK_SET);
     if (lseekReturn < 0) {
         printf(M_ERR_DB_READ);
         return ERR_DB_FILE;
     }
     
-
-
-
+    // Find all the student records from the sparsed file
+    // When found, copy the records to compressed file
     while ((readReturn = read(fd, &student, STUDENT_RECORD_SIZE)) != 0) {
         if (readReturn < 0) {
             printf(M_ERR_DB_READ);
             return ERR_DB_FILE;
         }
-
-
 
         if (memcmp(&student, &studentCmp, STUDENT_RECORD_SIZE) != 0) {
             // We have student
@@ -464,12 +457,13 @@ int compress_db(int fd)
         }
     }
 
+    // Rename the compressed file to the sparsed file
     rename(TMP_DB_FILE, DB_FILE);
-
+    // Close the sparsed file
     close(fd);
+
     printf(M_DB_COMPRESSED_OK);
     return com_fd;
-
 }
 
 /*
