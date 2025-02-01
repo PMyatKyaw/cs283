@@ -62,8 +62,9 @@ int open_db(char *dbFile, bool should_truncate)
  */
 int get_student(int fd, int id, student_t *s) 
 {
-    ssize_t readReturn;
+    ssize_t readReturn;     // Return value for read()
 
+    // Read until it reaches EOF
     while ((readReturn = read(fd, s, STUDENT_RECORD_SIZE)) != 0) {
         if (readReturn < 0) {
             printf(M_ERR_DB_READ);
