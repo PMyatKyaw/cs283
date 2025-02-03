@@ -72,7 +72,7 @@ Please answer the following questions and submit in your repo for the second ass
     ```
     In this implementation the storage for the student record is allocated on the heap using `malloc()` and passed back to the caller when the function returns. What do you think about this alternative implementation of `get_student(...)`?  Address in your answer why it work work, but also think about any potential problems it could cause.  
     
-    > **ANSWER:** This would work because
+    > **ANSWER:** This would work because we are dynamically allocationg the memory which will not be freed after the function scope. One potential problem is that the programmer forgetting to free the memory.
 
 
 4. Lets take a look at how storage is managed for our simple database. Recall that all student records are stored on disk using the layout of the `student_t` structure (which has a size of 64 bytes).  Lets start with a fresh database by deleting the `student.db` file using the command `rm ./student.db`.  Now that we have an empty database lets add a few students and see what is happening under the covers.  Consider the following sequence of commands:
@@ -102,11 +102,11 @@ Please answer the following questions and submit in your repo for the second ass
 
     - Please explain why the file size reported by the `ls` command was 128 bytes after adding student with ID=1, 256 after adding student with ID=3, and 4160 after adding the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** Linux allocates disk space by block and this block depends on your HDD/SSD. When `ls` is typed, it shows how much data is actually written. That's is why we see the difference in size.
 
     -   Why did the total storage used on the disk remain unchanged when we added the student with ID=1, ID=3, and ID=63, but increased from 4K to 8K when we added the student with ID=64? 
 
-        > **ANSWER:** _start here_
+        > **ANSWER:** This is again due to how Linux allocates disk space. When ID = 64 is added, this goes over the linux allocated disk space that is around 4k which means that linux has to allocate anther block leading to 8k.
 
     - Now lets add one more student with a large student ID number  and see what happens:
 
@@ -119,4 +119,4 @@ Please answer the following questions and submit in your repo for the second ass
         ```
         We see from above adding a student with a very large student ID (ID=99999) increased the file size to 6400000 as shown by `ls` but the raw storage only increased to 12K as reported by `du`.  Can provide some insight into why this happened?
 
-        > **ANSWER:**  _start here_
+        > **ANSWER:**  Now, we have substantial increase in size. But, you will see that the real storage in the disk will be 12k. Even though this is such a massive jump, no acutal data is written between ID = 64 and ID = 99999 thus creating a huge sparse region. Linux does not allocate blocks for holes. The main difference between ID = 64 and ID = 99999 is that for ID = 64, we are growing with ID = 63 and then 64 sequentially. There was no massive spike like this from ID = 64 to ID = 99999. So, Linux will just allocates another block ignring the hole.
