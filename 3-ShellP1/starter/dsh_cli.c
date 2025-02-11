@@ -50,10 +50,20 @@ int main()
     int rc = 0;
     command_list_t clist;
 
-    // char *token;
+    command_list_t *memsetReturn;
+
+
+    
+
+
 
     while (1)
     {
+        memsetReturn = memset(&clist, 0, sizeof(clist));
+        if (memsetReturn == NULL){
+            printf("Something went Wrong!");
+        }
+
         printf("%s", SH_PROMPT);
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL)
         {
@@ -65,24 +75,52 @@ int main()
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
         // printf("%s\n", cmd_buff);
 
-        if (strncmp(cmd_buff, EXIT_CMD, EXIT_CMD_BYTES) == 0) 
+
+
+
+        if (strncmp(cmd_buff, EXIT_CMD, EXIT_CMD_BYTES) == 0)   // exit command
         {
+            rc = 0;
             break;
         } 
+        else if (strncmp(cmd_buff, DRAGON_CMD, DRAGON_CMD_BYTES) == 0)
+        {
+            printf("%s", DRAGON_ASCII_ART);
+        }
         else if (cmd_buff[0] == '\0')  // No command is typed
         {
+            rc = WARN_NO_CMDS;
             printf(CMD_WARN_NO_CMD);
-            return WARN_NO_CMDS;
-        }
+        } 
+        else 
+        {
+            
+            // Import the input into "command_list_t" struct
+            rc = build_cmd_list(cmd_buff, &clist);
 
-        
-        rc = build_cmd_list(cmd_buff, &clist);
-        print_cmd_list(&clist);
+            if (rc == ERR_TOO_MANY_COMMANDS) 
+            {
+                printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
+            } 
+            else if (rc == ERR_CMD_OR_ARGS_TOO_BIG) 
+            {
+                // return ERR_CMD_OR_ARGS_TOO_BIG;
+            } else if (rc == 0) {
+                
+                print_cmd_list(&clist);
+            }
+        }
     }
 
     free(cmd_buff);
-    // printf(M_NOT_IMPL);
-    // exit(EXIT_NOT_IMPL);
+    cmd_buff = NULL;
+
+
+    if (rc == OK) {
+        return OK;
+    } else {
+        return -999;
+    }
     
 }
 

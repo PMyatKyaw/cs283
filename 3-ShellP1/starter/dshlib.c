@@ -34,50 +34,45 @@
  */
 int build_cmd_list(char *cmd_line, command_list_t *clist)
 {
-    char *command = NULL;
-    char *saveCommand = NULL;
-    // size_t commandCounter = 0;
-    char *token = NULL;
-    char *saveToken = NULL;
-    size_t tokenLength = 0;
-    size_t argsLength = 0;
+    char *command = NULL;       // for strtok_r
+    char *saveCommand = NULL;   // for strtok_r
+    char *token = NULL;         // for nested strtok_r
+    char *saveToken = NULL;     // for nested strtok_r
+    size_t tokenLength = 0;     // Size of each token
+    size_t argsLength = 0;      // Counter for arguments
+    int firstTime = 1;          // Boolean value for switching between exec and args
 
-    int firstTime = 1;
+    clist->num = 0;             // Initialize clist->num to be zero
 
-    clist->num = 0;
-
-    // int index;
-
+    // Split the commands by pipe
     command = strtok_r(cmd_line, PIPE_STRING, &saveCommand);
     while (command != NULL) 
     {
         // printf("%s\n", command);
-        
-        argsLength = 0;
-
+        argsLength = 0;         // Reset the args length for command in each pipe
 
         ++clist->num;
         // printf("clist->num: %d\n", clist->nm);
         if ((clist->num) > CMD_MAX) 
         { 
-            printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
+            // printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
             return ERR_TOO_MANY_COMMANDS;
         }
 
-        // Execution Command
+        // exec command
         token = strtok_r(command, SPACE_STRING, &saveToken);
         
 
-        // Rest of command
+        // args command
         while (token != NULL) 
         {
 
+            // Get the exec command first; if not go to arguments
             if (firstTime) 
             {
                 tokenLength = strlen(token);
-                if (tokenLength > EXE_MAX) {
-                    return ERR_CMD_OR_ARGS_TOO_BIG;
-                }
+                if (tokenLength > EXE_MAX) { return ERR_CMD_OR_ARGS_TOO_BIG; }
+
                 strcpy(clist->commands[clist->num - 1].exe, token);
 
                 firstTime = 0;
@@ -86,21 +81,15 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             {
 
                 tokenLength = strlen(token);
-                if (argsLength + tokenLength > ARG_MAX) 
-                {
-                    return ERR_CMD_OR_ARGS_TOO_BIG;
-                }
 
+                if (argsLength + tokenLength > ARG_MAX) { return ERR_CMD_OR_ARGS_TOO_BIG; }
                 for (size_t i = 0; i < tokenLength; i++) 
                 {
                     clist->commands[clist->num - 1].args[argsLength] = token[i];
                     ++argsLength;
                 }
 
-                if (argsLength + 1 > ARG_MAX) 
-                {
-                    return ERR_CMD_OR_ARGS_TOO_BIG;
-                }
+                if (argsLength + 1 > ARG_MAX) { return ERR_CMD_OR_ARGS_TOO_BIG; }
                 clist->commands[clist->num - 1].args[argsLength] = SPACE_CHAR;
                 ++argsLength;
             }
@@ -110,32 +99,30 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 
         if (argsLength > 0) {
             clist->commands[clist->num - 1].args[argsLength - 1] = '\0';
-            printf("%s\n", clist->commands[clist->num - 1].args);
+            // printf("%s\n", clist->commands[clist->num - 1].args);
         }
 
         command = strtok_r(NULL, PIPE_STRING, &saveCommand);
         firstTime = 1;
     }
 
-
     return OK;
 }
 
-
+// Print out the struct command_list_t
 void print_cmd_list (command_list_t *clist) 
 {
+    printf(CMD_OK_HEADER, clist->num);
+    
     for (int i = 1; i <= clist->num; i++) 
     {
-        if (strlen(clist->commands[i-1].args) != 0) {
+        if (strlen(clist->commands[i-1].args) != 0) 
+        {
             printf("<%d> %s [%s]\n", i, clist->commands[i-1].exe, clist->commands[i-1].args);
-        } else {
+        } 
+        else 
+        {
             printf("<%d> %s\n", i, clist->commands[i-1].exe);
         }
     }
-
-
-
-
-
-
 }
