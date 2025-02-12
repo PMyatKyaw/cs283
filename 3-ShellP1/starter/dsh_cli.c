@@ -47,6 +47,10 @@
 int main()
 {
     char *cmd_buff = (char *) malloc(5000); 
+    if (!cmd_buff) {
+        printf(MALLOC_FAILURE);
+        return ERR_ALLOCATION_FAILED;
+    }
     int rc = 0;
     command_list_t clist;
 
@@ -59,6 +63,7 @@ int main()
 
     while (1)
     {
+        // Set all the values inside the struct to zero
         memsetReturn = memset(&clist, 0, sizeof(clist));
         if (memsetReturn == NULL){
             printf("Something went Wrong!");
@@ -83,11 +88,11 @@ int main()
             rc = 0;
             break;
         } 
-        else if (strncmp(cmd_buff, DRAGON_CMD, DRAGON_CMD_BYTES) == 0)
+        else if (strncmp(cmd_buff, DRAGON_CMD, DRAGON_CMD_BYTES) == 0) // dragon command
         {
             printf("%s", DRAGON_ASCII_ART);
         }
-        else if (cmd_buff[0] == '\0')  // No command is typed
+        else if (cmd_buff[0] == '\0')  // no command is typed
         {
             rc = WARN_NO_CMDS;
             printf(CMD_WARN_NO_CMD);
@@ -105,8 +110,9 @@ int main()
             else if (rc == ERR_CMD_OR_ARGS_TOO_BIG) 
             {
                 // return ERR_CMD_OR_ARGS_TOO_BIG;
-            } else if (rc == 0) {
-                
+            } 
+            else if (rc == 0) 
+            {    
                 print_cmd_list(&clist);
             }
         }
@@ -115,12 +121,6 @@ int main()
     free(cmd_buff);
     cmd_buff = NULL;
 
-
-    if (rc == OK) {
-        return OK;
-    } else {
-        return -999;
-    }
-    
+    return rc;    
 }
 

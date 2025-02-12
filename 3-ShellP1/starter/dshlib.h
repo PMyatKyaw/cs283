@@ -37,6 +37,7 @@ typedef struct command_list
 #define WARN_NO_CMDS -1
 #define ERR_TOO_MANY_COMMANDS -2
 #define ERR_CMD_OR_ARGS_TOO_BIG -3
+#define ERR_ALLOCATION_FAILED -4
 
 // starter code
 #define M_NOT_IMPL "The requested operation is not implemented yet!\n"
@@ -51,6 +52,7 @@ void print_cmd_list (command_list_t *clist);
 #define CMD_OK_HEADER "PARSED COMMAND LINE - TOTAL COMMANDS %d\n"
 #define CMD_WARN_NO_CMD "warning: no commands provided\n"
 #define CMD_ERR_PIPE_LIMIT "error: piping limited to %d commands\n"
+#define MALLOC_FAILURE "error: memory allocation failed\n"
 
 #define DRAGON_ASCII_ART \
     "                                                                        @%%%%                        \n"\
