@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdint.h>
 
 #include "dshlib.h"
 
@@ -97,7 +98,8 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
             token = strtok_r(NULL, SPACE_STRING, &saveToken);
         }
 
-        if (argsLength > 0) {
+        if (argsLength > 0) 
+        {
             clist->commands[clist->num - 1].args[argsLength - 1] = '\0';
             // printf("%s\n", clist->commands[clist->num - 1].args);
         }
@@ -125,4 +127,67 @@ void print_cmd_list (command_list_t *clist)
             printf("<%d> %s\n", i, clist->commands[i-1].exe);
         }
     }
+}
+
+int encode_dragon_ascii (char *ascii_art, uint8_t *x) 
+{
+    int xCounter = 0;                       // Counter for each byte
+    int i = 0;                              // Counter for loop through all characters in ascii representation
+    char tmpChar;
+
+    while (*(ascii_art + i) != '\0') 
+    {
+        uint8_t tmpInt = 0;
+
+        // Loop through a byte
+        for (int j = 0; j < 4; j++) 
+        {
+
+            // For last remaining byte
+            if (*(ascii_art + i) == '\0') 
+            { 
+                // printf("Hello\n");
+                tmpInt <<= 2;
+                continue; 
+            }
+
+            tmpChar = *(ascii_art + i);
+
+            // Left shift by 2 to make space
+            tmpInt <<= 2; 
+
+            if (tmpChar == ' ') { tmpInt |= SPACE; } 
+            else if (tmpChar == '%') { tmpInt |= PERCENT; } 
+            else if (tmpChar == '@') { tmpInt |= AT; } 
+            else if (tmpChar == '\n') { tmpInt |= NEWLINE; }
+    
+            ++i;
+        }
+
+        x[xCounter] = tmpInt;
+        ++xCounter;
+    }
+
+    return xCounter;
+}
+
+void decode_dragon_ascii (uint8_t *x, size_t length)
+{
+    for (size_t i = 0; i < length; i++) 
+    {
+
+        uint8_t tmpInt = x[i];
+        
+        for (int j = 6; j >= 0 ; j -= 2) 
+        {
+            uint8_t value = (tmpInt >> j) & 0b11;
+
+            if (value == SPACE) { printf(" "); } 
+            else if (value == PERCENT) { printf("%%"); } 
+            else if (value == AT) { printf("@"); } 
+            else if (value == NEWLINE) { printf("\n"); } 
+            // else { printf("WHAT"); }
+        }
+    }
+
 }

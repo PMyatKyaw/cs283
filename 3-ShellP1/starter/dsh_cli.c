@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdint.h>
 
 #include "dshlib.h"
 
@@ -46,28 +47,29 @@
  */
 int main()
 {
-    char *cmd_buff = (char *) malloc(5000); 
+    char *cmd_buff = (char *) malloc(5000);     // Input Buffer
     if (!cmd_buff) {
         printf(MALLOC_FAILURE);
         return ERR_ALLOCATION_FAILED;
     }
-    int rc = 0;
-    command_list_t clist;
+    int rc = 0;                                 // Return Values
+    command_list_t clist;                       // Command Struct
+    uint8_t encodedAscii[DRAGON_ASCII_ART_LEN]; // Dragon Logo Encoded Array
 
-    command_list_t *memsetReturn;
-
+    command_list_t *memsetReturn;               // Return Value for memset()
 
     
-
-
 
     while (1)
     {
         // Set all the values inside the struct to zero
         memsetReturn = memset(&clist, 0, sizeof(clist));
-        if (memsetReturn == NULL){
-            printf("Something went Wrong!");
-        }
+        if (memsetReturn == NULL){ printf("Something went Wrong!"); }
+        // Set all the values inside the encoded dragon representation to zero
+        memsetReturn = memset(encodedAscii, 0, sizeof(encodedAscii));
+        if (memsetReturn == NULL){ printf("Something went Wrong!"); }
+
+
 
         printf("%s", SH_PROMPT);
         if (fgets(cmd_buff, ARG_MAX, stdin) == NULL)
@@ -82,7 +84,6 @@ int main()
 
 
 
-
         if (strncmp(cmd_buff, EXIT_CMD, EXIT_CMD_BYTES) == 0)   // exit command
         {
             rc = 0;
@@ -90,7 +91,12 @@ int main()
         } 
         else if (strncmp(cmd_buff, DRAGON_CMD, DRAGON_CMD_BYTES) == 0) // dragon command
         {
-            printf("%s", DRAGON_ASCII_ART);
+            // Uncompressed Print
+            // printf("%s", DRAGON_ASCII_ART);
+
+            // Compressed Print
+            encode_dragon_ascii(DRAGON_ASCII_ART, encodedAscii);
+            decode_dragon_ascii(encodedAscii, DRAGON_ASCII_ART_LEN);
         }
         else if (cmd_buff[0] == '\0')  // no command is typed
         {

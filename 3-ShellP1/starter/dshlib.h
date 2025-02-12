@@ -47,6 +47,8 @@ typedef struct command_list
 // prototypes
 int build_cmd_list(char *cmd_line, command_list_t *clist);
 void print_cmd_list (command_list_t *clist);
+int encode_dragon_ascii (char *ascii_art, uint8_t *x);
+void decode_dragon_ascii (uint8_t *x, size_t length);
 
 // output constants
 #define CMD_OK_HEADER "PARSED COMMAND LINE - TOTAL COMMANDS %d\n"
@@ -54,11 +56,12 @@ void print_cmd_list (command_list_t *clist);
 #define CMD_ERR_PIPE_LIMIT "error: piping limited to %d commands\n"
 #define MALLOC_FAILURE "error: memory allocation failed\n"
 
+// drexel dragon
 #define DRAGON_ASCII_ART \
-    "                                                                        @%%%%                        \n"\
-    "                                                                     %%%%%%                          \n"\
-    "                                                                    %%%%%%                           \n"\
-    "                                                                 % %%%%%%%           @               \n"\
+    "                                                                        @%%%%                       \n"\
+    "                                                                     %%%%%%                         \n"\
+    "                                                                    %%%%%%                          \n"\
+    "                                                                 % %%%%%%%           @              \n"\
     "                                                                %%%%%%%%%%        %%%%%%%           \n"\
     "                                       %%%%%%%  %%%%@         %%%%%%%%%%%%@    %%%%%%  @%%%%        \n"\
     "                                  %%%%%%%%%%%%%%%%%%%%%%      %%%%%%%%%%%%%%%%%%%%%%%%%%%%          \n"\
@@ -93,7 +96,12 @@ void print_cmd_list (command_list_t *clist);
     "                %%%%%%%%%%%%%%%%%%%%%%%%%%  %%%% %%%                      %%%%%%%%%%  %%%@          \n"\
     "                     %%%%%%%%%%%%%%%%%%% %%%%%% %%                          %%%%%%%%%%%%%@          \n"\
     "                                                                                 %%%%%%%@           \n\0"
+#define DRAGON_ASCII_ART_LEN 960
 
+#define SPACE 0b00
+#define PERCENT 0b01 
+#define AT 0b10
+#define NEWLINE 0b11
 
 #endif
 
