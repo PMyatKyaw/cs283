@@ -84,6 +84,18 @@ int exec_local_cmd_loop()
         // remove the trailing \n from cmd_buff
         commandInput[strcspn(commandInput, "\n")] = '\0';
 
+        // Maximum Argument Error Check
+        // Take account for \n and \0
+        if (strlen(commandInput) > ARG_MAX - 2) {
+            
+            // Deallocate cmd_buff_t
+            free_cmd_buff(&cmd_struct);
+            free(commandInput); commandInput = NULL;
+
+            printf("!!! Maximum Input Character is 254 !!!\n");
+            exit(ERR_CMD_OR_ARGS_TOO_BIG);
+        }
+
 
         rc = build_cmd_buff(commandInput, cmd_struct);
         if (rc == WARN_NO_CMDS) 
@@ -274,7 +286,7 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
             
             ++i;
 
-            // Error Check
+            // Argument Counter Error Check
             if (cmd_buff->argc > 8) 
             {
                 printf(CMD_ERR_PIPE_LIMIT, 8);
@@ -286,6 +298,13 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
         // cmd_buff->argv[cmd_buff->argc] = cmd_buff->_cmd_buffer[i];
         cmd_buff->argv[cmd_buff->argc] = '\0';
         ++(cmd_buff->argc);
+
+        // Execution Command Maximum Character Error Check
+        if (strlen(cmd_buff->argv[0]) > EXE_MAX) 
+        {
+            printf("!!! Max Character Limit for Exec Command is 64 !!!\n");
+            exit(ERR_CMD_OR_ARGS_TOO_BIG);
+        }
 
     return OK;
 }
