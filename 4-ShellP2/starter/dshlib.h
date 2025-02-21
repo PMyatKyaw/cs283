@@ -28,14 +28,6 @@ typedef struct command{
 }command_t;
 */
 
-// tmp Constants
-#define EXIT_CMD_BYTES 4
-#define DRAGON_CMD "dragon"
-#define DRAGON_CMD_BYTES 6
-
-
-
-
 //Special character #defines
 #define SPACE_CHAR  ' '
 #define PIPE_CHAR   '|'
@@ -44,6 +36,12 @@ typedef struct command{
 #define SH_PROMPT "dsh2> "
 #define EXIT_CMD "exit"
 #define CD_CMD "cd"
+#define RC_CMD "rc"
+// tmp Constants
+#define EXIT_CMD_BYTES 4
+#define DRAGON_CMD "dragon"
+#define DRAGON_CMD_BYTES 6
+
 
 //Standard Return Codes
 #define OK                       0

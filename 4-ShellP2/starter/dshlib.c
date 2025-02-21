@@ -1,6 +1,3 @@
-// QtoTA:   How many bytes do i allocate for cmd_buff_t
-//          How many bytes do i allocate for userinput
-
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <errno.h>
 #include "dshlib.h"
 
 /*
@@ -64,6 +62,7 @@ int exec_local_cmd_loop()
     }
     int rc = 0;
     int f_result, c_result;
+    int wexit_result = -1;
 
     // Allocate cmd_buff_t
     cmd_buff_t *cmd_struct = NULL;
@@ -151,7 +150,12 @@ int exec_local_cmd_loop()
             }
 
             free(dirLoc); dirLoc = NULL;
-        } 
+        }
+
+        else if (strcmp(cmd_struct->argv[0], RC_CMD) == 0)
+        {
+            if (wexit_result != -1) { printf("%d\n", wexit_result); }
+        }
 
         else 
         {
@@ -165,11 +169,92 @@ int exec_local_cmd_loop()
             {
                 rc = execvp(cmd_struct->argv[0], cmd_struct->argv);
                 // Make sure you include the exid command below in case of execution failure
-                exit(ERR_EXEC_CMD);
+                // exit(ERR_EXEC_CMD);
+                exit(errno);
             } 
             else 
             {
                 wait(&c_result);
+                // printf("%d\n", WEXITSTATUS(c_result));
+                switch (WEXITSTATUS(c_result)) 
+                {
+                    case ENOENT:    // File Not Found
+                        wexit_result = ENOENT;
+                        printf("!!! File Not Found !!!\n");
+                        break;
+                    
+                    case EACCES:    // Permission Denied
+                        wexit_result = EACCES;
+                        printf("!!! Permission Denied (Command Not Found In Path) !!!\n");
+                        break;
+
+                    case EBADF:     // Bad File Number
+                        wexit_result = EBADF;
+                        printf("!!! Bad File Number !!!\n");
+                        break;
+                    
+                    case EEXIST:    // File Exists
+                        wexit_result = EEXIST;
+                        printf("!!! File Exists !!!\n");
+                        break;
+                    
+                    case ENFILE:    // File Table Overflow
+                        wexit_result = ENFILE;
+                        printf("!!! File Table Overflow !!!\n");
+                        break;
+
+                    case EMFILE:    // Too many open files
+                        wexit_result = EMFILE;
+                        printf("!!! Too Many Open Files !!!\n");
+                        break;
+
+                    case EFBIG:     // File Too Large
+                        wexit_result = EFBIG;
+                        printf("!!! File Too Large !!!\n");
+                        break;
+
+                    case EROFS:     // Read only file system
+                        wexit_result = EROFS;
+                        printf("!!! Read Only File System !!!\n");
+                        break;
+
+                    case EBADFD:    // File Descriptor in Bad Shape
+                        wexit_result = EBADFD;
+                        printf("!!! File Descriptor in Bad Shape !!!\n");
+                        break;
+
+                    case EINVAL:    // Invalid Argument
+                        wexit_result = EINVAL;
+                        printf("!!! Invalid Argument !!!\n");
+                        break;
+
+                    case E2BIG:     // Argument List Too Long
+                        wexit_result = E2BIG;
+                        printf("!!! Argument List Too Long !!!\n");
+                        break;
+
+                    case ENOEXEC:   // Execution Format Error
+                        wexit_result = ENOEXEC;
+                        printf("!!! Execution Format Error !!!\n");
+                        break;
+
+                    case EPERM: // Operation not permitted
+                        wexit_result = ENOEXEC;
+                        printf("!!! Operation Not Permitted !!!\n");
+                        break;
+
+                    // // Child Process Failure meaning
+                    // // Command does not exist
+                    // // This is not from errno.h
+                    // case ERR_EXEC_CMD + 256:
+                    //     wexit_result = ERR_EXEC_CMD + 256;
+                    //     printf("!!! Command Not Found In PATH !!!\n");
+                    //     break;
+
+                    default:
+                        wexit_result = WEXITSTATUS(c_result);
+
+                }
             }
         }
 
