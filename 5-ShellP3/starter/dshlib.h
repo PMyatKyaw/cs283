@@ -78,9 +78,10 @@ int clear_cmd_buff(cmd_buff_t *cmd_buff);
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff);
 int close_cmd_buff(cmd_buff_t *cmd_buff);
 int alloc_cmd_list(command_list_t **cmd_list);
-int build_cmd_list(char *cmd_line, command_list_t *clist);
+int clear_cmd_list(command_list_t *cmd_list);
 int free_cmd_list(command_list_t **cmd_list);
-void execute_pipeline(command_list_t *cmd_list);
+int build_cmd_list(char *cmd_line, command_list_t *clist);
+int execute_pipeline(command_list_t *cmd_list);
 
 // dragon extra credit prototypes
 extern void print_dragon();
@@ -103,7 +104,6 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd);
 //main execution context
 int exec_local_cmd_loop();
 int exec_cmd(cmd_buff_t *cmd);
-void execute_pipeline(command_list_t *clist);
 
 
 
