@@ -275,9 +275,7 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 {
     cmd_buff->_cmd_buffer = cmd_line;
 
-    if (strlen(cmd_buff->_cmd_buffer) == 0) {
-        return WARN_NO_CMDS;
-    }
+    if (strlen(cmd_buff->_cmd_buffer) == 0) { return WARN_NO_CMDS; }
 
     cmd_buff->argc = 0;
     size_t i = 0;
@@ -337,8 +335,7 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
                 }
 
             }
-
-            
+ 
             ++i;
 
             // Argument Counter Error Check
@@ -455,15 +452,52 @@ int execute_pipeline(command_list_t *cmd_list)
 
         if (pids[i] == 0) {  // Child process
 
-            // >
+            // Extra Credit for '>', '<', '>>'
             mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+
+            // >
             for (int j = 0; j < cmd_list->commands[i].argc - 1; j++) 
             {
                 // printf("><:%s\n", cmd_list->commands[i].argv[j]);
                 if (strcmp(cmd_list->commands[i].argv[j], ">") == 0)
                 {
+                    // printf("In:%s\n", cmd_list->commands[i].argv[j]);
+                    // printf("In:%s\n", cmd_list->commands[i].argv[j+1]);
+
                     int fd = open(cmd_list->commands[i].argv[j+1], O_WRONLY | O_CREAT | O_TRUNC, mode);
-                    if (fd == -1)
+                    if (fd < 0)
+                    {
+                        printf("!!!Error Opening the File!!!");
+                        exit(ERR_OPEN_FILE);
+                    }
+
+                    dup2(fd, STDOUT_FILENO);
+                    close(fd);
+
+                    cmd_list->commands[i].argv[j] = '\0';
+                    break;
+                } 
+                
+                else if (strcmp(cmd_list->commands[i].argv[j], "<") == 0)
+                {
+                    int fd = open(cmd_list->commands[i].argv[j+1], O_RDONLY, mode);
+                    if (fd < 0)
+                    {
+                        printf("!!!Error Opening the File!!!");
+                        exit(ERR_OPEN_FILE);
+                    }
+
+                    dup2(fd, STDIN_FILENO);
+                    close(fd);
+
+                    cmd_list->commands[i].argv[j] = '\0';
+                    break;
+                }
+
+                else if (strcmp(cmd_list->commands[i].argv[j], ">>") == 0)
+                {
+                    int fd = open(cmd_list->commands[i].argv[j+1], O_WRONLY | O_CREAT | O_APPEND, mode);
+                    if (fd < 0)
                     {
                         printf("!!!Error Opening the File!!!");
                         exit(ERR_OPEN_FILE);
@@ -476,17 +510,6 @@ int execute_pipeline(command_list_t *cmd_list)
                     break;
                 }
             }
-
-            // <
-
-            // >> 
-
-
-
-
-
-
-
 
             // Set up input pipe for all except first process
             if (i > 0) { dup2(pipes[i-1][0], STDIN_FILENO); }
