@@ -112,3 +112,66 @@ EOF
     # Assertions
     [ "$status" -eq 0 ]
 }
+
+@test "Redirection > Test" {
+    run "./dsh" <<EOF                
+echo "Hello World" > output.txt
+EOF
+
+    # Check if string inside file is the same as user's input
+    file_str=$(cat output.txt | tr -d '[:space:]')
+    expected_output="HelloWorld"
+
+    # Check exact match
+    [ "$file_str" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+
+    rm output.txt
+}
+
+@test "Redirection < Test" {
+    run "./dsh" <<EOF                
+wc -l < bats/assignment_tests.sh
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    expected_output="36dsh3>dsh3>cmdloopreturned0"
+
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+}
+
+@test "Redirection >> Test" {
+    run "./dsh" <<EOF                
+echo "Hello World" > output.txt
+echo "I am hungry" >> output.txt
+EOF
+
+    # Check if string inside file is the same as user's input
+    file_str=$(cat output.txt | tr -d '[:space:]')
+    expected_output="HelloWorldIamhungry"
+
+    # Check exact match
+    [ "$file_str" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+
+    rm output.txt
+}
+
