@@ -56,7 +56,7 @@
  */
 int exec_local_cmd_loop()
 {
-    char *commandInput = (char *) malloc(ARG_MAX);
+    char *commandInput = (char *) malloc(ARG_MAX);          // Main Input From User
     if (commandInput == NULL) 
     {
         perror("!!! Malloc of commandInput Failed !!!");
@@ -65,16 +65,14 @@ int exec_local_cmd_loop()
     int rc = 0;
     int wexit_result = -1;
 
-    // Allocate cmd_buff_t
-    cmd_buff_t *cmd_struct = NULL;
-    alloc_cmd_buff(&cmd_struct);
-    clear_cmd_buff(cmd_struct);
+    // // Allocate cmd_buff_t
+    // cmd_buff_t *cmd_struct = NULL;
+    // alloc_cmd_buff(&cmd_struct);
+    // clear_cmd_buff(cmd_struct);
     
-    
-    // Allocate command
+    // Allocate command_list_t
     command_list_t *cmd_list = NULL;
     alloc_cmd_list(&cmd_list);
-
 
     while (1) {
         printf("%s", SH_PROMPT);
@@ -88,17 +86,17 @@ int exec_local_cmd_loop()
         // remove the trailing \n from cmd_buff
         commandInput[strcspn(commandInput, "\n")] = '\0';
 
-        // Maximum Argument Error Check
-        // Take account for \n and \0
-        if (strlen(commandInput) > ARG_MAX - 2) {
+        // // Maximum Argument Error Check
+        // // Take account for \n and \0
+        // if (strlen(commandInput) > ARG_MAX - 2) {
             
-            // Deallocate cmd_buff_t
-            free_cmd_buff(&cmd_struct);
-            free(commandInput); commandInput = NULL;
+        //     // Deallocate cmd_buff_t
+        //     free_cmd_buff(&cmd_struct);
+        //     free(commandInput); commandInput = NULL;
 
-            printf("!!! Maximum Input Character is 254 !!!\n");
-            exit(ERR_CMD_OR_ARGS_TOO_BIG);
-        }
+        //     printf("!!! Maximum Input Character is 254 !!!\n");
+        //     exit(ERR_CMD_OR_ARGS_TOO_BIG);
+        // }
 
         rc = build_cmd_list(commandInput, cmd_list);
         // // Debugging Purpose
@@ -114,18 +112,16 @@ int exec_local_cmd_loop()
         //     printf("%s\n", cmd_list->commands[j]._cmd_buffer);
         // }
         
-
-
-
-
-
-        
-
-
         // rc = build_cmd_buff(commandInput, cmd_struct);
+
         if (rc == WARN_NO_CMDS) 
         {   
             printf(CMD_WARN_NO_CMD);
+            continue;
+        }
+        else if (rc == ERR_TOO_MANY_COMMANDS)
+        {
+            printf(CMD_ERR_PIPE_LIMIT, CMD_MAX);
             continue;
         }
         // Debugging Purpose
@@ -164,7 +160,7 @@ int exec_local_cmd_loop()
                     exit(ERR_MEMORY);
                 }
 
-                if (chdir(cmd_struct->argv[1]) == -1)
+                if (chdir(cmd_list->commands[0].argv[1]) == -1)
                 {
                     // perror("!!! chdir Error !!!");
                     // free(dirLoc); dirLoc = NULL;
@@ -199,14 +195,17 @@ int exec_local_cmd_loop()
     }
 
 
-    // Deallocate cmd_buff_t
-    free_cmd_buff(&cmd_struct);
+    // // Deallocate cmd_buff_t
+    // free_cmd_buff(&cmd_struct);
     free(commandInput); commandInput = NULL;
-
     free_cmd_list(&cmd_list);
 
-    return OK;
+    return rc;
 }
+
+
+
+
 
 int alloc_cmd_buff(cmd_buff_t **cmd_buff)
 {
@@ -367,10 +366,10 @@ int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
 
 int build_cmd_list(char *cmd_line, command_list_t *clist) 
 {
-    int rc;
+    int rc;                         // Return Value
 
-    char* command = NULL;
-    char* saveCommand = NULL;
+    char* command = NULL;           // For strtok_r (Splitting Commands)
+    char* saveCommand = NULL;       // For strtok_r (Splitting Commands)
     
     clist->num = 0;
     
@@ -394,6 +393,13 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         //     ++j;
         // }
 
+        // Check maximum commands
+        if (clist->num == CMD_MAX)
+        {   
+            free_cmd_buff(&cmd_struct);
+            return ERR_TOO_MANY_COMMANDS;
+        }
+
         clist->commands[clist->num].argc = cmd_struct->argc; 
         for (int i = 0; i < cmd_struct->argc - 1; i++)
         {
@@ -404,12 +410,8 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
         // printf("%s\n", cmd_struct->_cmd_buffer);
         clist->commands[clist->num]._cmd_buffer = strdup(cmd_struct->_cmd_buffer);
         // printf("%s\n", clist->commands[clist->num]._cmd_buffer);
-        
         ++clist->num;
         
-
-
-
         clear_cmd_buff(cmd_struct);
         command = strtok_r(NULL, PIPE_STRING, &saveCommand);
     }
@@ -423,13 +425,13 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 // void execute_pipeline(Command commands[], int num_commands)
 int execute_pipeline(command_list_t *cmd_list)
 {
-    int c_result; // Error number
-    int wexit_result;
+    int c_result;                       // Error number
+    int wexit_result;       
 
-    int num_commands = cmd_list->num;
+    int num_commands = cmd_list->num;   // Number of Commands
 
-    int pipes[num_commands - 1][2];  // Array of pipes
-    pid_t pids[num_commands];        // Array to store process IDs
+    int pipes[num_commands - 1][2];     // Array of pipes
+    pid_t pids[num_commands];           // Array to store process IDs
 
     // Create all necessary pipes
     for (int i = 0; i < num_commands - 1; i++) 
@@ -517,17 +519,14 @@ int execute_pipeline(command_list_t *cmd_list)
     // Wait for all children
     for (int i = 0; i < num_commands; i++) 
     {
-        waitpid(pids[i], NULL, 0);
-
-        wait(&c_result);
+        waitpid(pids[i], &c_result, 0);
+        // printf("Num: %d\n", c_result);
         wexit_result = getErrorNumber(c_result);
-        return wexit_result;
+        // return wexit_result;
     }
 
-    return OK;
+    return wexit_result;
 }
-
-
 
 int getErrorNumber (int c_result) {
     int wexit_result = -1;

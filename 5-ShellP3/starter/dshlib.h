@@ -88,7 +88,7 @@ int execute_pipeline(command_list_t *cmd_list);
 extern void print_dragon();
 int encode_dragon_ascii (char *ascii_art, uint8_t *x);
 void decode_dragon_ascii (uint8_t *x, size_t length);
-// error no extra credit prototypes
+// errorno extra credit prototypes
 int getErrorNumber (int c_result);
 
 //built in command stuff
@@ -106,16 +106,10 @@ Built_In_Cmds exec_built_in_cmd(cmd_buff_t *cmd);
 int exec_local_cmd_loop();
 int exec_cmd(cmd_buff_t *cmd);
 
-
-
-
 //output constants
 #define CMD_OK_HEADER       "PARSED COMMAND LINE - TOTAL COMMANDS %d\n"
 #define CMD_WARN_NO_CMD     "warning: no commands provided\n"
 #define CMD_ERR_PIPE_LIMIT  "error: piping limited to %d commands\n"
-
-
-
 
 // drexel dragon
 #define DRAGON_ASCII_ART \
@@ -163,6 +157,5 @@ int exec_cmd(cmd_buff_t *cmd);
 #define PERCENT 0b01 
 #define AT 0b10
 #define NEWLINE 0b11
-
 
 #endif
