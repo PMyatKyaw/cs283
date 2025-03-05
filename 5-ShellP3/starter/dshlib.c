@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
 #include <errno.h>
 
 #include "dshlib.h"
@@ -62,7 +63,6 @@ int exec_local_cmd_loop()
         exit(ERR_MEMORY);
     }
     int rc = 0;
-    int f_result, c_result;
     int wexit_result = -1;
 
     // Allocate cmd_buff_t
@@ -99,11 +99,6 @@ int exec_local_cmd_loop()
             printf("!!! Maximum Input Character is 254 !!!\n");
             exit(ERR_CMD_OR_ARGS_TOO_BIG);
         }
-
-
-        // char *commandInput2 = NULL;
-        // strcpy(commandInput2, commandInput);
-        // printf("%s\n", commandInput2);'
 
         rc = build_cmd_list(commandInput, cmd_list);
         // // Debugging Purpose
@@ -158,8 +153,6 @@ int exec_local_cmd_loop()
 
                 // Compressed Print
                 print_dragon();
-
-
             }
 
             else if (strcmp(cmd_list->commands[0].argv[0], CD_CMD) == 0) 
@@ -203,88 +196,6 @@ int exec_local_cmd_loop()
         }
 
         clear_cmd_list(cmd_list);
-
-
-
-
-
-
-
-
-
-
-        // if (strcmp(cmd_struct->argv[0], EXIT_CMD) == 0)   // exit command
-        // {
-        //     rc = OK;
-        //     break;
-        // }
-
-        // else if (strcmp(cmd_struct->argv[0], DRAGON_CMD) == 0) // dragon command
-        // {
-        //     // Uncompressed Print
-        //     // printf("%s", DRAGON_ASCII_ART);
-
-        //     // Compressed Print
-        //     print_dragon();
-
-
-        // }
-
-        // else if (strcmp(cmd_struct->argv[0], CD_CMD) == 0) 
-        // {
-        //     char *dirLoc = (char *) malloc(100);
-        //     if (dirLoc == NULL) 
-        //     {
-        //         perror("!!! Malloc of dirLoc Failed !!!");
-        //         exit(ERR_MEMORY);
-        //     }
-
-        //     if (chdir(cmd_struct->argv[1]) == -1)
-        //     {
-        //         // perror("!!! chdir Error !!!");
-        //         // free(dirLoc); dirLoc = NULL;
-        //         // exit(ERR_EXEC_CMD);
-        //     } 
-        //     else 
-        //     {
-        //         getcwd(dirLoc, 100);
-        //         // printf("%s\n", dirLoc);
-        //     }
-
-        //     free(dirLoc); dirLoc = NULL;
-        // }
-
-        // else if (strcmp(cmd_struct->argv[0], RC_CMD) == 0)
-        // {
-        //     if (wexit_result != -1) { printf("%d\n", wexit_result); }
-        // }
-
-        // else 
-        // {
-        //     f_result = fork();
-        //     if (f_result < 0) {
-        //         perror("fork error");
-        //         exit(1);
-        //     }
-
-        //     // Child
-        //     if (f_result == 0) 
-        //     {
-        //         rc = execvp(cmd_struct->argv[0], cmd_struct->argv);
-        //         // Make sure you include the exid command below in case of execution failure
-        //         // exit(ERR_EXEC_CMD);
-        //         exit(errno);
-        //     } 
-        //     else 
-        //     {
-        //         wait(&c_result);
-        //         // printf("%d\n", WEXITSTATUS(c_result));
-
-        //         wexit_result = getErrorNumber(c_result);
-        //     }
-        // }
-
-        // clear_cmd_buff(cmd_struct);
     }
 
 
@@ -357,6 +268,8 @@ int clear_cmd_list(command_list_t *cmd_list)
         perror("!!!Clearing command_list_t failed!!!\n");
         exit(ERR_MEMORY);
     }
+
+    return OK;
 }
 
 int build_cmd_buff(char *cmd_line, cmd_buff_t *cmd_buff)
@@ -458,11 +371,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 
     char* command = NULL;
     char* saveCommand = NULL;
-    char* command2 = NULL;
     
     clist->num = 0;
     
-
     cmd_buff_t *cmd_struct = NULL;
     alloc_cmd_buff(&cmd_struct);
     clear_cmd_buff(cmd_struct);
@@ -500,7 +411,6 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 
 
         clear_cmd_buff(cmd_struct);
-        // free(command2); command2 = NULL;
         command = strtok_r(NULL, PIPE_STRING, &saveCommand);
     }
 
@@ -513,6 +423,9 @@ int build_cmd_list(char *cmd_line, command_list_t *clist)
 // void execute_pipeline(Command commands[], int num_commands)
 int execute_pipeline(command_list_t *cmd_list)
 {
+    int c_result; // Error number
+    int wexit_result;
+
     int num_commands = cmd_list->num;
 
     int pipes[num_commands - 1][2];  // Array of pipes
@@ -534,11 +447,45 @@ int execute_pipeline(command_list_t *cmd_list)
         pids[i] = fork();
         if (pids[i] == -1) 
         {
-            perror("fork");
+            perror("Fork Error");
             exit(EXIT_FAILURE);
         }
 
         if (pids[i] == 0) {  // Child process
+
+            // >
+            mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
+            for (int j = 0; j < cmd_list->commands[i].argc - 1; j++) 
+            {
+                // printf("><:%s\n", cmd_list->commands[i].argv[j]);
+                if (strcmp(cmd_list->commands[i].argv[j], ">") == 0)
+                {
+                    int fd = open(cmd_list->commands[i].argv[j+1], O_WRONLY | O_CREAT | O_TRUNC, mode);
+                    if (fd == -1)
+                    {
+                        printf("!!!Error Opening the File!!!");
+                        exit(ERR_OPEN_FILE);
+                    }
+
+                    dup2(fd, STDOUT_FILENO);
+                    close(fd);
+
+                    cmd_list->commands[i].argv[j] = '\0';
+                    break;
+                }
+            }
+
+            // <
+
+            // >> 
+
+
+
+
+
+
+
+
             // Set up input pipe for all except first process
             if (i > 0) { dup2(pipes[i-1][0], STDIN_FILENO); }
 
@@ -571,6 +518,10 @@ int execute_pipeline(command_list_t *cmd_list)
     for (int i = 0; i < num_commands; i++) 
     {
         waitpid(pids[i], NULL, 0);
+
+        wait(&c_result);
+        wexit_result = getErrorNumber(c_result);
+        return wexit_result;
     }
 
     return OK;

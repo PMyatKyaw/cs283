@@ -70,6 +70,7 @@ typedef struct command_list{
 #define ERR_MEMORY              -5
 #define ERR_EXEC_CMD            -6
 #define OK_EXIT                 -7
+#define ERR_OPEN_FILE           -8
 
 //prototypes
 int alloc_cmd_buff(cmd_buff_t **cmd_buff);
