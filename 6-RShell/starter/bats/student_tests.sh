@@ -95,128 +95,155 @@ EOF
 
     # Assertions
     [ "$status" -eq 0 ]
+
 }
 
-# @test "exit client" {
-#     # Start dsh -s in the background
-#     ./dsh -s &
-#     pid=$!
+@test "remote echo" {
+    # Start dsh -s in the background
+    ./dsh -s &
 
-#     run ./dsh -c <<EOF                
-# exit
-# EOF
+    run ./dsh -c <<EOF                
+echo "Hello World"
+stop-server
+EOF
 
-#     kill $pid
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-#     # Strip all whitespace (spaces, tabs, newlines) from the output
-#     stripped_output=$(echo "$output" | tr -d '[:space:]')
+    # Expected output with all whitespace removed for easier matching
+    expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>HelloWorlddsh3>clientrequestedservertostop,stopping...cmdloopreturned0"
 
-#     # Expected output with all whitespace removed for easier matching
-#     expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>clientexited:gettingnextconnection...cmdloopreturned0"
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
 
-#     # These echo commands will help with debugging and will only print
-#     #if the test fails
-#     echo "Captured stdout:" 
-#     echo "Output: $output"
-#     echo "Exit Status: $status"
-#     echo "${stripped_output} -> ${expected_output}"
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
 
-#     # Check exact match
-#     [ "$stripped_output" = "$expected_output" ]
+    # Assertions
+    [ "$status" -eq 0 ]
 
-#     # Assertions
-#     [ "$status" -eq 0 ]
-# }
+}
 
-# @test "exit client" {
-#     # Start dsh -s in the background
-#     ./dsh -s &
-#     pid=$!
+@test "remote pipe" {
+    # Start dsh -s in the background
+    ./dsh -s &
 
-#     run ./dsh -c <<EOF                
-# exit
-# EOF
+    run ./dsh -c <<EOF                
+echo "Hello World" | wc
+stop-server
+EOF
 
-#     kill $pid
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-#     # Strip all whitespace (spaces, tabs, newlines) from the output
-#     stripped_output=$(echo "$output" | tr -d '[:space:]')
+    # Expected output with all whitespace removed for easier matching
+    expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>1212dsh3>clientrequestedservertostop,stopping...cmdloopreturned0"
 
-#     # Expected output with all whitespace removed for easier matching
-#     expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>clientexited:gettingnextconnection...cmdloopreturned0"
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
 
-#     # These echo commands will help with debugging and will only print
-#     #if the test fails
-#     echo "Captured stdout:" 
-#     echo "Output: $output"
-#     echo "Exit Status: $status"
-#     echo "${stripped_output} -> ${expected_output}"
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
 
-#     # Check exact match
-#     [ "$stripped_output" = "$expected_output" ]
+    # Assertions
+    [ "$status" -eq 0 ]
+}
 
-#     # Assertions
-#     [ "$status" -eq 0 ]
-# }
+@test "remote unknown command failure" {
+    # Start dsh -s in the background
+    ./dsh -s &
 
-# @test "exit client" {
-#     # Start dsh -s in the background
-#     ./dsh -s &
-#     pid=$!
+    run ./dsh -c <<EOF                
+abcd
+stop-server
+EOF
 
-#     run ./dsh -c <<EOF                
-# exit
-# EOF
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-#     kill $pid
+    # Expected output with all whitespace removed for easier matching
+    expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>execvp:Permissiondeniedsocketservermode:addr:0.0.0.0:1234->Single-ThreadedModedsh3>clientrequestedservertostop,stopping...cmdloopreturned0"
 
-#     # Strip all whitespace (spaces, tabs, newlines) from the output
-#     stripped_output=$(echo "$output" | tr -d '[:space:]')
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
 
-#     # Expected output with all whitespace removed for easier matching
-#     expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>clientexited:gettingnextconnection...cmdloopreturned0"
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
 
-#     # These echo commands will help with debugging and will only print
-#     #if the test fails
-#     echo "Captured stdout:" 
-#     echo "Output: $output"
-#     echo "Exit Status: $status"
-#     echo "${stripped_output} -> ${expected_output}"
+    # Assertions
+    [ "$status" -eq 0 ]
+}
 
-#     # Check exact match
-#     [ "$stripped_output" = "$expected_output" ]
+@test "remote unknown pipe command failure" {
+    # Start dsh -s in the background
+    ./dsh -s &
 
-#     # Assertions
-#     [ "$status" -eq 0 ]
-# }
+    run ./dsh -c <<EOF                
+echo hello | banana
+stop-server
+EOF
 
-# @test "exit client" {
-#     # Start dsh -s in the background
-#     ./dsh -s &
-#     pid=$!
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
 
-#     run ./dsh -c <<EOF                
-# exit
-# EOF
+    # Expected output with all whitespace removed for easier matching
+    expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>execvp:Permissiondeniedsocketservermode:addr:0.0.0.0:1234->Single-ThreadedModedsh3>clientrequestedservertostop,stopping...cmdloopreturned0"
 
-#     kill $pid
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
 
-#     # Strip all whitespace (spaces, tabs, newlines) from the output
-#     stripped_output=$(echo "$output" | tr -d '[:space:]')
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
 
-#     # Expected output with all whitespace removed for easier matching
-#     expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>clientexited:gettingnextconnection...cmdloopreturned0"
+    # Assertions
+    [ "$status" -eq 0 ]
+}
 
-#     # These echo commands will help with debugging and will only print
-#     #if the test fails
-#     echo "Captured stdout:" 
-#     echo "Output: $output"
-#     echo "Exit Status: $status"
-#     echo "${stripped_output} -> ${expected_output}"
+@test "Two server connection" {
+    # Start dsh -s in the background
+    ./dsh -s &
 
-#     # Check exact match
-#     [ "$stripped_output" = "$expected_output" ]
+    run ./dsh -c << EOF
+echo hello
+EOF
 
-#     # Assertions
-#     [ "$status" -eq 0 ]
-# }
+    run ./dsh -c << EOF
+echo mingalar br
+stop-server
+EOF
+
+    # Strip all whitespace (spaces, tabs, newlines) from the output
+    stripped_output=$(echo "$output" | tr -d '[:space:]')
+
+    # Expected output with all whitespace removed for easier matching
+    expected_output="socketclientmode:addr:127.0.0.1:1234dsh3>mingalarbrdsh3>clientrequestedservertostop,stopping...cmdloopreturned0"
+
+    # These echo commands will help with debugging and will only print
+    #if the test fails
+    echo "Captured stdout:" 
+    echo "Output: $output"
+    echo "Exit Status: $status"
+    echo "${stripped_output} -> ${expected_output}"
+
+    # Check exact match
+    [ "$stripped_output" = "$expected_output" ]
+
+    # Assertions
+    [ "$status" -eq 0 ]
+}
