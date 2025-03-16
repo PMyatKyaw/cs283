@@ -140,7 +140,7 @@ int exec_remote_cmd_loop(char *address, int port)
 
         if (strcmp(cmd_buff, EXIT_CMD) == 0)   // exit command
         {
-            printf(RCMD_SERVER_EXITED);
+            printf(RCMD_MSG_CLIENT_EXITED);
             break;
         }
 
