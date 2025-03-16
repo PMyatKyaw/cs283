@@ -52,6 +52,7 @@
 int start_server(char *ifaces, int port, int is_threaded){
     int svr_socket;
     int rc;
+    (void) is_threaded;        // Explicitly mark as unused
 
     //
     //TODO:  If you are implementing the extra credit, please add logic
@@ -119,6 +120,8 @@ int stop_server(int svr_socket){
  * 
  */
 int boot_server(char *ifaces, int port){
+    (void) ifaces;          // Explicitly mark as unused
+                            // I cannot make it work without hardcoding
     int svr_socket;
     int ret;
     
@@ -221,9 +224,9 @@ int process_cli_requests(int svr_socket){
         close(cli_socket);
 
         // Stop Server Command
-        if (rc < 0) {
+        if (rc == OK_EXIT) {
             break;
-        }
+        } 
     }
 
     stop_server(cli_socket);
@@ -275,7 +278,7 @@ int exec_client_requests(int cli_socket) {
     int io_size;
     int rc;
     int cmd_rc;
-    int last_rc;
+    // int last_rc;
     char *io_buff;
 
     // command_list_t cmd_list;
@@ -333,12 +336,29 @@ int exec_client_requests(int cli_socket) {
         {
             if (strcmp(cmd_list->commands[0].argv[0], EXIT_CMD) == 0)   // exit command
             {
+                // rc = send_message_eof(cli_socket);
+                // if (rc != OK){
+                //     printf(CMD_ERR_RDSH_COMM);
+                //     free(io_buff);
+                //     free_cmd_list(&cmd_list);
+                //     close(cli_socket);
+                //     return ERR_RDSH_COMMUNICATION;
+                // }
+
                 rc = OK;
                 break;
             }
 
             else if (strcmp(cmd_list->commands[0].argv[0], EXIT_SERVER_CMD) == 0)   // stop server command
             {
+                rc = send_message_eof(cli_socket);
+                if (rc != OK){
+                    printf(CMD_ERR_RDSH_COMM);
+                    free(io_buff);
+                    free_cmd_list(&cmd_list);
+                    close(cli_socket);
+                    return ERR_RDSH_COMMUNICATION;
+                }
                 rc = OK_EXIT;
                 break;
             }
@@ -347,7 +367,6 @@ int exec_client_requests(int cli_socket) {
         // else 
         // {
             // TODO rsh_execute_pipeline to run your cmd_list
-            printf("reached\n");
             rc = rsh_execute_pipeline(cli_socket, cmd_list);
             // if (rc != EXIT_SC) {
             //     printf("SOMETHING WENT WRONG AFTER rsh_execute_pipeline!!\n");
@@ -428,6 +447,8 @@ int send_message_eof(int cli_socket){
  */
 int send_message_string(int cli_socket, char *buff){
     //TODO implement writing to cli_socket with send()
+    (void) cli_socket;      // Explicitly mark as unused
+    (void) buff;            // Explicitly mark as unused
     return WARN_RDSH_NOT_IMPL;
 }
 
@@ -478,24 +499,18 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
     // Built_In_Cmds bi_cmd;
     int exit_code;
 
-    // Debugging Purpose
-    // printf("Outside Build Cmd List:%s\n", io_buff);
-    printf("num:%d\n", clist->num);
-    for (int j = 0; j < clist->num; j++)
-    {
-        for (int i = 0; i < clist->commands[j].argc - 1; i++)
-        {
-            printf("Args:%s\n", clist->commands[j].argv[i]);
-        }
+    // // Debugging Purpose
+    // // printf("Outside Build Cmd List:%s\n", io_buff);
+    // printf("num:%d\n", clist->num);
+    // for (int j = 0; j < clist->num; j++)
+    // {
+    //     for (int i = 0; i < clist->commands[j].argc - 1; i++)
+    //     {
+    //         printf("Args:%s\n", clist->commands[j].argv[i]);
+    //     }
 
-        printf("%s\n", clist->commands[j]._cmd_buffer);
-    }
-
-
-
-
-
-
+    //     printf("%s\n", clist->commands[j]._cmd_buffer);
+    // }
 
     // Create all necessary pipes
     for (int i = 0; i < clist->num - 1; i++) {
@@ -517,65 +532,6 @@ int rsh_execute_pipeline(int cli_sock, command_list_t *clist) {
         }
 
         if (pids[i] == 0) {  // Child process
-
-            // // Extra Credit for '>', '<', '>>'
-            // mode_t mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-
-            // >
-            // for (int j = 0; j < clist->commands[i].argc - 1; j++) 
-            // {
-            //     // printf("><:%s\n", cmd_list->commands[i].argv[j]);
-            //     if (strcmp(clist->commands[i].argv[j], ">") == 0)
-            //     {
-            //         // printf("In:%s\n", cmd_list->commands[i].argv[j]);
-            //         // printf("In:%s\n", cmd_list->commands[i].argv[j+1]);
-
-            //         int fd = open(clist->commands[i].argv[j+1], O_WRONLY | O_CREAT | O_TRUNC, mode);
-            //         if (fd < 0)
-            //         {
-            //             printf("!!!Error Opening the File!!!");
-            //             exit(ERR_OPEN_FILE);
-            //         }
-
-            //         dup2(fd, STDOUT_FILENO);
-            //         close(fd);
-
-            //         clist->commands[i].argv[j] = '\0';
-            //         break;
-            //     } 
-                
-            //     else if (strcmp(clist->commands[i].argv[j], "<") == 0)
-            //     {
-            //         int fd = open(clist->commands[i].argv[j+1], O_RDONLY, mode);
-            //         if (fd < 0)
-            //         {
-            //             printf("!!!Error Opening the File!!!");
-            //             exit(ERR_OPEN_FILE);
-            //         }
-
-            //         dup2(fd, STDIN_FILENO);
-            //         close(fd);
-
-            //         clist->commands[i].argv[j] = '\0';
-            //         break;
-            //     }
-
-            //     else if (strcmp(clist->commands[i].argv[j], ">>") == 0)
-            //     {
-            //         int fd = open(clist->commands[i].argv[j+1], O_WRONLY | O_CREAT | O_APPEND, mode);
-            //         if (fd < 0)
-            //         {
-            //             printf("!!!Error Opening the File!!!");
-            //             exit(ERR_OPEN_FILE);
-            //         }
-
-            //         dup2(fd, STDOUT_FILENO);
-            //         close(fd);
-
-            //         clist->commands[i].argv[j] = '\0';
-            //         break;
-            //     }
-            // }
 
             // New Stuff
             if (i == 0) { dup2(cli_sock, STDIN_FILENO); }

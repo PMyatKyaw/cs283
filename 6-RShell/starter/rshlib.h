@@ -7,7 +7,7 @@
 
 #define EXIT_SERVER_CMD "stop-server"
 #define BUFF_SZ 512
-static uint8_t send_buffer[BUFF_SZ];
+// static uint8_t send_buffer[BUFF_SZ];
 
 
 //Constants for communication

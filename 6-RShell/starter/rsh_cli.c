@@ -99,8 +99,15 @@ int exec_remote_cmd_loop(char *address, int port)
     int is_eof;
 
     // TODO set up cmd and response buffs
-
     cmd_buff = (char *) malloc(ARG_MAX);          // Main Input From User
+    rsp_buff = (char *) malloc(RDSH_COMM_BUFF_SZ);
+    cli_socket = start_client(address,port);
+    if (cli_socket < 0){
+        perror("start client");
+        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_CLIENT);
+    }
+
+    
     if (cmd_buff == NULL) 
     {
         printf("!!! Malloc of cmd_buff Failed !!!\n");
@@ -108,18 +115,12 @@ int exec_remote_cmd_loop(char *address, int port)
         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
     }
 
-    rsp_buff = (char *) malloc(RDSH_COMM_BUFF_SZ);
-    if (rsp_buff == NULL)\
+    
+    if (rsp_buff == NULL)
     {
         printf("!!! Malloc of rsp_buff Failed !!!\n");
         // exit(ERR_MEMORY);
         return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_MEMORY);
-    }
-
-    cli_socket = start_client(address,port);
-    if (cli_socket < 0){
-        perror("start client");
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_CLIENT);
     }
 
     while (1) 
@@ -137,6 +138,12 @@ int exec_remote_cmd_loop(char *address, int port)
         // remove the trailing \n from cmd_buff
         cmd_buff[strcspn(cmd_buff, "\n")] = '\0';
 
+        if (strcmp(cmd_buff, EXIT_CMD) == 0)   // exit command
+        {
+            printf(RCMD_SERVER_EXITED);
+            break;
+        }
+
 
         // TODO send() over cli_socket
         io_size = strlen(cmd_buff) + 1;     //the +1 includes the NULL byte
@@ -147,54 +154,35 @@ int exec_remote_cmd_loop(char *address, int port)
             return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
         }
 
-        // while (1) {
-            
-        // }
+        if (strcmp(cmd_buff, EXIT_SERVER_CMD) == 0)   // stop-server command
+        {
+            printf(RCMD_MSG_SVR_STOP_REQ);
+            break;
+        }
         // TODO recv all the results
 
         do {
             io_size = recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ - 1, 0);
-    if (io_size == -1) {
-        perror("recv error");
-        return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
-    }
-    
-    rsp_buff[io_size] = '\0';  // Null terminate
-    is_eof = (rsp_buff[io_size - 1] == RDSH_EOF_CHAR) ? 1 : 0;
-    if (is_eof){
-        rsp_buff[io_size - 1] = '\0'; // Remove EOF marker
-    }
+            if (io_size == -1) {
+                perror("recv error");
+                return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
+            }
+            
+            rsp_buff[io_size] = '\0';  // Null terminate
+            // printf("iosize: %ld\n", io_size);
+            // printf("Rspbuff: %s\n", rsp_buff);
 
-    printf("%s", rsp_buff);  // Print received response
+            is_eof = (rsp_buff[io_size - 1] == RDSH_EOF_CHAR) ? 1 : 0;
+            if (is_eof){
+                rsp_buff[io_size - 1] = '\0'; // Remove EOF marker
+            }
+
+            printf("%s", rsp_buff);  // Print received response
         } while(!is_eof);
-
-        // io_size = recv(cli_socket, rsp_buff, RDSH_COMM_BUFF_SZ,0);
-        // if (io_size == -1) {
-        //     perror("read error");
-        //     // exit(EXIT_FAILURE);
-        //     return client_cleanup(cli_socket, cmd_buff, rsp_buff, ERR_RDSH_COMMUNICATION);
-        // }
-
-        // is_eof = (rsp_buff[io_size-1] == RDSH_EOF_CHAR) ? 1 : 0;
-        // if (is_eof){
-        //     // printf("EOF exists!\n");
-        //     rsp_buff[io_size-1] = '\0'; //remove the marker and replace with a null
-        //                               //this makes string processing easier
-        // }
-
-        // // printf("Banana%s\n", rsp_buff);
-        // printf("%.*s", (int)io_size, rsp_buff);
-
-
-
-
 
         //If we are not at the last chunk, loop back and receive some more, if it
         //is the last chunk break out of the loop
         // if (is_eof) { break; }
-            
-
-
 
         // Reset buffers for next command
         memset(cmd_buff, 0, ARG_MAX);  // Clear command buffer
@@ -204,7 +192,8 @@ int exec_remote_cmd_loop(char *address, int port)
         // TODO break on exit command
     }
 
-    free(cmd_buff); cmd_buff = NULL;
+    // free(cmd_buff); cmd_buff = NULL;
+    // free(rsp_buff); rsp_buff = NULL;
     return client_cleanup(cli_socket, cmd_buff, rsp_buff, OK);
 }
 
